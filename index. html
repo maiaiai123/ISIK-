@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101018">
+  <title>Lumi — ИИ-помощник</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #101018;
+      --panel: #171721;
+      --panel2: #20202d;
+      --text: #f5f3ff;
+      --muted: #a6a3b7;
+      --accent: #b49aff;
+      --accent2: #7fe0d0;
+      --border: rgba(255,255,255,.09);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(ellipse at 15% 0%, rgba(136,101,255,.17), transparent 40%),
+        radial-gradient(ellipse at 100% 85%, rgba(84,205,190,.10), transparent 35%),
+        var(--bg);
+      color: var(--text);
+      font: 15px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+    button, textarea { font: inherit; }
+    .app { max-width: 1160px; min-height: 100vh; margin: auto; padding: 22px; }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    .brand { display: flex; align-items: center; gap: 12px; font-size: 20px; font-weight: 750; letter-spacing: -.5px; }
+    .logo {
+      display: grid; place-items: center; width: 40px; height: 40px; border-radius: 14px;
+      color: #181322; font-size: 21px; background: linear-gradient(135deg, #c7b2ff, #83e8d5);
+      box-shadow: 0 7px 28px rgba(180,154,255,.25);
+    }
+    .status { color: var(--muted); font-size: 13px; }
+    .layout { display: grid; grid-template-columns: 240px 1fr; gap: 18px; min-height: calc(100vh - 100px); }
+    aside, main { border: 1px solid var(--border); border-radius: 22px; background: rgba(23,23,33,.86); }
+    aside { padding: 18px; }
+    .new-chat, .suggestion, .send {
+      border: 0; cursor: pointer; color: var(--text); transition: .18s ease;
+    }
+    .new-chat {
+      width: 100%; padding: 12px; border-radius: 13px; text-align: left;
+      background: var(--panel2); font-weight: 650;
+    }
+    .new-chat:hover, .suggestion:hover { transform: translateY(-1px); border-color: rgba(180,154,255,.45); }
+    .side-label { margin: 26px 0 10px; color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: 1.3px; text-transform: uppercase; }
+    .suggestion {
+      width: 100%; padding: 10px 11px; margin: 4px 0; text-align: left;
+      color: #dcd9e8; border: 1px solid transparent; border-radius: 11px; background: transparent;
+    }
+    .note { margin-top: 25px; color: var(--muted); font-size: 12px; }
+    main { display: flex; flex-direction: column; min-height: 650px; overflow: hidden; }
+    .chat-head { padding: 20px 24px; border-bottom: 1px solid var(--border); }
+    .chat-head strong { font-size: 15px; }
+    .chat-head div { color: var(--muted); font-size: 12px; margin-top: 3px; }
+    #messages { flex: 1; padding: 25px; overflow-y: auto; }
+    .welcome { max-width: 660px; margin: 9vh auto 25px; text-align: center; }
+    .welcome .spark { color: var(--accent); font-size: 35px; }
+    .welcome h1 { margin: 10px 0 8px; font-size: clamp(27px, 4vw, 40px); letter-spacing: -1.4px; }
+    .welcome p { color: var(--muted); }
+    .message { display: flex; gap: 12px; max-width: 780px; margin: 0 auto 20px; }
+    .avatar { flex: 0 0 34px; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 12px; background: var(--panel2); }
+    .message.user .avatar { background: #352c4d; }
+    .bubble { padding: 11px 14px; border: 1px solid var(--border); border-radius: 5px 15px 15px; background: rgba(255,255,255,.035); white-space: pre-wrap; overflow-wrap: anywhere; }
+    .composer-wrap { padding: 16px 22px 19px; border-top: 1px solid var(--border); }
+    .composer { display: flex; align-items: end; gap: 10px; max-width: 820px; margin: auto; padding: 10px; border: 1px solid var(--border); border-radius: 17px; background: #20202c; }
+    textarea { flex: 1; min-height: 42px; max-height: 160px; resize: vertical; padding: 10px; color: var(--text); border: 0; outline: 0; background: transparent; }
+    textarea::placeholder { color: #89869a; }
+    .send { width: 42px; height: 42px; border-radius: 13px; color: #1a1625; background: linear-gradient(135deg, #c7b2ff, #83e8d5); font-size: 19px; font-weight: 800; }
+    .send:disabled { opacity: .5; cursor: wait; }
+    .disclaimer { max-width: 820px; margin: 8px auto 0; color: var(--muted); text-align: center; font-size: 11px; }
+    @media (max-width: 700px) {
+      .app { padding: 12px; }
+      .layout { grid-template-columns: 1fr; }
+      aside { padding: 12px; }
+      aside .side-label, aside .note { display: none; }
+      .suggestions { display: flex; gap: 5px; overflow-x: auto; margin-top: 8px; }
+      .suggestion { flex: 0 0 auto; width: auto; font-size: 12px; }
+      main { min-height: 68vh; }
+      #messages { padding: 18px 13px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="brand"><span class="logo">✦</span> lumi</div>
+      <div class="status">Ваш личный ИИ-помощник</div>
+    </header>
+
+    <div class="layout">
+      <aside>
+        <button class="new-chat" id="newChat">＋ Новый диалог</button>
+        <div class="side-label">Попробуйте спросить</div>
+        <div class="suggestions">
+          <button class="suggestion">Объясни сложную тему простыми словами</button>
+          <button class="suggestion">Помоги написать сочинение</button>
+          <button class="suggestion">Реши задачу пошагово</button>
+          <button class="suggestion">Придумай идею для проекта</button>
+        </div>
+        <div class="note">Проверяйте важные ответы: ИИ иногда ошибается.</div>
+      </aside>
+
+      <main>
+        <div class="chat-head">
+          <strong>Новый диалог</strong>
+          <div>Задайте вопрос — Lumi постарается помочь</div>
+        </div>
+        <section id="messages" aria-live="polite">
+          <div class="welcome" id="welcome">
+            <div class="spark">✦</div>
+            <h1>Привет! Я Lumi.</h1>
+            <p>Помогу разобраться в теме, решить задачу или подобрать слова.</p>
+          </div>
+        </section>
+        <div class="composer-wrap">
+          <form class="composer" id="form">
+            <textarea id="prompt" maxlength="8000" rows="1" placeholder="Напишите свой вопрос…" aria-label="Ваш вопрос"></textarea>
+            <button class="send" id="send" aria-label="Отправить">↑</button>
+          </form>
+          <div class="disclaimer">Ответы ИИ могут содержать ошибки. Не отправляйте пароли и личные данные.</div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = "ВСТАВЬТЕ_URL_ВАШЕГО_WORKER";
+    const messages = document.querySelector("#messages");
+    const form = document.querySelector("#form");
+    const promptBox = document.querySelector("#prompt");
+    const sendButton = document.querySelector("#send");
+    const history = [];
+
+    function addMessage(role, text) {
+      document.querySelector("#welcome")?.remove();
+      const row = document.createElement("div");
+      row.className = `message ${role}`;
+      const avatar = document.createElement("div");
+      avatar.className = "avatar";
+      avatar.textContent = role === "user" ? "Вы" : "✦";
+      const bubble = document.createElement("div");
+      bubble.className = "bubble";
+      bubble.textContent = text;
+      row.append(avatar, bubble);
+      messages.append(row);
+      messages.scrollTop = messages.scrollHeight;
+      return bubble;
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const text = promptBox.value.trim();
+      if (!text || sendButton.disabled) return;
+
+      if (API_URL.includes("ВСТАВЬТЕ_URL")) {
+        addMessage("assistant", "Сначала укажите URL вашего Cloudflare Worker в коде index.html.");
+        return;
+      }
+
+      addMessage("user", text);
+      history.push({ role: "user", content: text });
+      promptBox.value = "";
+      sendButton.disabled = true;
+      const answerBox = addMessage("assistant", "Думаю…");
+
+      try {
+        const response = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages: history.slice(-12) })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Не удалось получить ответ.");
+        answerBox.textContent = data.answer;
+        history.push({ role: "assistant", content: data.answer });
+      } catch (error) {
+        answerBox.textContent = "Не получилось связаться с помощником. Проверьте подключение и настройку Worker. Подробность: " + error.message;
+        history.pop();
+      } finally {
+        sendButton.disabled = false;
+        promptBox.focus();
+      }
+    });
+
+    document.querySelectorAll(".suggestion").forEach((button) => {
+      button.addEventListener("click", () => {
+        promptBox.value = button.textContent;
+        promptBox.focus();
+      });
+    });
+
+    document.querySelector("#newChat").addEventListener("click", () => {
+      history.length = 0;
+      messages.innerHTML = `
+        <div class="welcome" id="welcome">
+          <div class="spark">✦</div>
+          <h1>Привет! Я Lumi.</h1>
+          <p>Помогу разобраться в теме, решить задачу или подобрать слова.</p>
+        </div>`;
+    });
+  </script>
+</body>
+</html>
